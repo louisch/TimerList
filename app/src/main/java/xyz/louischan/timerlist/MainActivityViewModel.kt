@@ -1,8 +1,6 @@
 package xyz.louischan.timerlist
 
-import android.arch.lifecycle.LiveData
-import android.arch.lifecycle.MutableLiveData
-import android.arch.lifecycle.ViewModel
+import android.arch.lifecycle.*
 
 
 class MainActivityViewModel : ViewModel() {
@@ -13,8 +11,10 @@ class MainActivityViewModel : ViewModel() {
     }
     val timers: LiveData<List<Timer>> = _timers
 
-    fun addNewTimer() {
-        _timersList.add(Timer())
+    fun addNewTimer(): List<Timer> {
+        val timer = Timer()
+        _timersList.add(timer)
         _timers.value = _timersList
+        return _timersList
     }
 }

@@ -1,10 +1,9 @@
 package xyz.louischan.timerlist
 
-import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
+import android.os.Handler
 import android.support.constraint.ConstraintLayout
-import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -24,18 +23,25 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var viewModel: MainActivityViewModel
 
+    private val timer: java.util.Timer = java.util.Timer()
+
+    private lateinit var handler: Handler
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show()
+        fab.setOnClickListener {
+            val timers = viewModel.addNewTimer()
+            viewAdapter.updateTimers(timers)
         }
 
+        handler = Handler(Handler.Callback { refreshTimers() })
+
         viewManager = LinearLayoutManager(this)
-        viewAdapter = TimersAdapter(listOf())
+        viewAdapter = TimersAdapter(mutableListOf())
 
         recyclerView = findViewById<RecyclerView>(R.id.timers).apply {
             // use this setting to improve performance if you know that changes
@@ -52,9 +58,23 @@ class MainActivity : AppCompatActivity() {
 
         viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
 
-        viewModel.timers.observe(this, Observer<List<Timer>> {
-            timers -> timers?.apply { viewAdapter.replaceTimers(this) }
-        })
+        val task: TimerTask = object : TimerTask() {
+            override fun run() {
+                handler.sendEmptyMessage(0)
+            }
+        }
+
+        timer.scheduleAtFixedRate(task, 0, 1000)
+    }
+
+    private fun refreshTimers() : Boolean {
+        viewAdapter.notifyDataSetChanged()
+        return true
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        timer.cancel()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -93,8 +113,8 @@ class TimersAdapter(var timers: List<Timer>) : RecyclerView.Adapter<TimersAdapte
         holder.timer.timer_text.text = timers[position].runningTime(Calendar.getInstance().time)
     }
 
-    fun replaceTimers(newTimers: List<Timer>) {
-        timers = newTimers
+    fun updateTimers(timers: List<Timer>) {
+        this.timers = timers
         notifyDataSetChanged()
     }
 }
